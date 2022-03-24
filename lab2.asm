@@ -6,13 +6,13 @@ msg2 db 0dh, 0ah, "Enter the substring you want to delete:", 0dh, 0ah, '$'
 msg3 db 0dh, 0ah, "Result: $" 
 msg4 db 0dh, 0ah, "Enter new substring: $"
 error_message db "Buffer overlflow",0Dh,0Ah,'$'
-string db 202 dup("$")
+string db 40805 dup("$")
 sbstrToRemove db 202 dup("$")
 sbstrToInsert db 202 dup("$")
 capacity EQU 200
-string_size db 0
-sbstrToRemove_size db 0
-sbstrToInsert_size db 0
+string_size dw 0
+sbstrToRemove_size dw 0
+sbstrToInsert_size dw 0
 flag dw 0
 
 .code
@@ -26,7 +26,7 @@ push cx
 mov bx, si
 
 xor cx, cx
-mov cl, sbstrToRemove_size
+mov cx, sbstrToRemove_size
 
 repe cmpsb
 je FOUND
@@ -36,8 +36,8 @@ FOUND:
 call DeleteSubstring
 mov ax, bx
 call InsertSubstring
-mov dl, sbstrToInsert_size
-add string_size, dl      
+mov dx, sbstrToInsert_size
+add string_size, dx      
 mov flag, dx
 
 NOT_FOUND:
@@ -54,7 +54,7 @@ endp ReplaceSubstring  ;
 DeleteSubstring proc
 push si
 push di
-mov cl, string_size
+mov cx, string_size
 mov di, bx
 
 repe movsb
@@ -67,11 +67,11 @@ endp DeleteSubstring
 
 InsertSubstring proc
 lea cx, string   ; string[2] 1st symbol address,string[1] is string lenght
-add cl, string_size   ; add string length to get to next symbol after the last
+add cx, string_size   ; add string length to get to next symbol after the last
 mov si, cx          ; last symbol as a source 
 dec si              ; at the last symbol
 mov bx, si          ; save last symbol in bx
-add bl, sbstrToInsert_size ; now there is the last symbol of new string in bx
+add bx, sbstrToInsert_size ; now there is the last symbol of new string in bx
 mov di, bx          ; new last symbol is reciever
 ;inc bx             
 
@@ -83,7 +83,7 @@ repe movsb
 lea si, sbstrToInsert ; source is sbstr 1st symbol
 mov di, ax          ; reciever is a place to insert
 xor cx, cx          ; set cx to zero
-mov cl, sbstrToInsert_size ; sbstr length to cx
+mov cx, sbstrToInsert_size ; sbstr length to cx
 cld                 ; moving forward
 repe movsb            
 
@@ -110,7 +110,7 @@ je end_input_string     ; если ZF = 1, то есть если истина
 
 mov [bx], al            ; помещаем введенный символ по адресу bx 
 inc bx                  ; увеличиваем значение расп. по адресу в bx на 1
-inc dl                  ; увеличиваем действительный размер строки
+inc dx                  ; увеличиваем действительный размер строки
     
 loop start_input_string
     
@@ -133,30 +133,36 @@ mov es, ax
 
 lea dx, msg1
 call puts
-mov dl,string_size
+mov dx,string_size
 lea bx,string
 call gets
-mov string_size,dl
+mov string_size,dx
 
 lea dx, msg2
 call puts
-mov dl,sbstrToRemove_size
+mov dx,sbstrToRemove_size
 lea bx, sbstrToRemove
 call gets
-mov sbstrToRemove_size,dl        
+mov sbstrToRemove_size,dx        
 
 lea dx, msg4
 call puts
-mov dl,sbstrToInsert_size
+mov dx,sbstrToInsert_size
 lea bx, sbstrToInsert
 call gets
-mov sbstrToInsert_size,dl
+mov sbstrToInsert_size,dx
+
+;xor ax,ax
+;mov al,string_size
+;mul sbstrToInsert_size
+;cmp al,200
+;ja end_err
 
 xor cx, cx
-mov cl, string_size
-sub cl, sbstrToRemove_size
+mov cx, string_size
+sub cx, sbstrToRemove_size
 jb endjb
-inc cl
+inc cx
 cld
 
 lea si, string
@@ -170,6 +176,12 @@ call puts
 lea dx, string
 call puts
 
+mov ah, 4ch
+int 21h
+
+end_err:
+lea dx, error_message
+call puts
 mov ah, 4ch
 int 21h
 
